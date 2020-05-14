@@ -88,7 +88,7 @@ func GetDataCleanFromQP(ctx *gin.Context, listaCamposAllow []string) DicJson {
 
 	for _, paramName := range listaCamposAllow {
 		paramAsString, isExiste := dicQueryParams[paramName]
-		if !isExiste {
+		if isExiste {
 			dic[paramName] = paramAsString[0]
 		}
 
@@ -98,7 +98,7 @@ func GetDataCleanFromQP(ctx *gin.Context, listaCamposAllow []string) DicJson {
 
 }
 
-func GetIsCamposRequeridos(dicCampos DicJson, listaCamposReq []string) (bool, error) {
+func GetIsAllCamposRequeridos(dicCampos DicJson, listaCamposReq []string) (bool, error) {
 
 	msgError := ""
 	for _, paramName := range listaCamposReq {
