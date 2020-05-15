@@ -11,8 +11,8 @@ type DicJson map[string]interface{}
 
 /* ************************************************************************************* */
 /* ************************************************************************************* */
-
-func Success(ctx *gin.Context, dic DicJson) {
+//Enviar respuesta 200 con cuento success,msg y data con el dicJson que se proporcione
+func RespuestaSuccess(ctx *gin.Context, dic DicJson) {
 	respuesta := DicJson{
 		"success": true,
 		"msg":     "",
@@ -22,7 +22,8 @@ func Success(ctx *gin.Context, dic DicJson) {
 	ctx.JSON(http.StatusOK, respuesta)
 }
 
-func Error(ctx *gin.Context, msg string) {
+//Enviar respuesta 200 con cuento success=FALSE,msg
+func RespuestaError(ctx *gin.Context, msg string) {
 	respuesta := DicJson{
 		"success": false,
 		"msg":     msg,
@@ -34,6 +35,8 @@ func Error(ctx *gin.Context, msg string) {
 /* ************************************************************************************* */
 /* ************************************************************************************* */
 
+
+//Obtener un query parame integer desde ejemplo de ?param1=valorInteger
 func GetIntFromQP(ctx *gin.Context, paramName string, valorDefault uint32, isOpcional bool) (uint32, error) {
 	dicQueryParams := ctx.Request.URL.Query()
 
@@ -118,13 +121,4 @@ func GetIsAllCamposRequeridos(dicCampos DicJson, listaCamposReq []string) (bool,
 	}
 	return true, nil
 
-}
-
-type ARespuestaJson struct {
-	Success bool   `json:"success" `
-	Msg     string `json:"msg" `
-}
-
-func FactoryARespuestaJson(success bool, msg string) ARespuestaJson {
-	return ARespuestaJson{success, msg}
 }
