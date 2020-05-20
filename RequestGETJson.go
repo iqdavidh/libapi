@@ -14,9 +14,9 @@ import (
 type DicJson map[string]interface{}
 
 type DicResp struct {
-	success bool
-	msg     string
-	data    map[string]interface{}
+	Success bool `json:"success"`
+	Msg     string `json:"msg"`
+	Data    map[string]interface{} `json:"data"`
 }
 
 /* ************************************************************************************* */
