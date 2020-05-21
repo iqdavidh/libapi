@@ -220,15 +220,15 @@ func RequestPOSTJson(url string, dicHeader map[string]string, bodyJson []byte) (
 /* *********************************************************************************************** */
 /*TEsting*/
 
-func TestBasicRequestGET(t2 *testing.T, a *assert.Assertions, queryParams string, group gin.HandlerFunc, codeRespuesta int, dicHeader map[string]string) DicResp {
+func TestBasicRequestGET(t2 *testing.T, a *assert.Assertions, queryParams string, urlParams string, group gin.HandlerFunc, codeRespuesta int, dicHeader map[string]string) DicResp {
 	gin.SetMode(gin.TestMode)
 	r := gin.Default()
-	url := "/test"
+	url := "/test"+urlParams
 	r.GET(url, group)
 
 	urlConQueryParams := url
 	if queryParams != "" {
-		urlConQueryParams = urlConQueryParams + "?"+queryParams
+		urlConQueryParams = urlConQueryParams + "?" + queryParams
 	}
 
 	req, errReq := http.NewRequest(http.MethodGet, urlConQueryParams, nil)
@@ -258,15 +258,15 @@ func TestBasicRequestGET(t2 *testing.T, a *assert.Assertions, queryParams string
 
 }
 
-func TestBasicRequestPOST(t2 *testing.T, a *assert.Assertions, queryParams string, body string, handlerRequest gin.HandlerFunc, codeRespuesta int, dicHeader map[string]string) DicResp {
+func TestBasicRequestPOST(t2 *testing.T, a *assert.Assertions, queryParams string, urlParams string, body string, handlerRequest gin.HandlerFunc, codeRespuesta int, dicHeader map[string]string) DicResp {
 	gin.SetMode(gin.TestMode)
 	ro := gin.Default()
-	url := "/test"
+	url := "/test"+urlParams
 	ro.POST(url, handlerRequest)
 
 	urlConQueryParams := url
 	if queryParams != "" {
-		urlConQueryParams = urlConQueryParams + "?"+queryParams
+		urlConQueryParams = urlConQueryParams + "?" + queryParams
 	}
 
 	req, errReq := http.NewRequest(http.MethodPost, urlConQueryParams, strings.NewReader(body))
