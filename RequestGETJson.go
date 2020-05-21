@@ -220,31 +220,43 @@ func RequestPOSTJson(url string, dicHeader map[string]string, bodyJson []byte) (
 /* *********************************************************************************************** */
 /*TEsting*/
 
-func TestBasicRequestGET(t2 *testing.T, a *assert.Assertions, queryParams string, urlParams string, group gin.HandlerFunc, codeRespuesta int, dicHeader map[string]string) DicResp {
-	gin.SetMode(gin.TestMode)
-	r := gin.Default()
-	url := "/test"+urlParams
-	r.GET(url, group)
+type ConfigTestBasic struct {
+	CodeRespuesta   int
+	DicHeader       map[string]string
+	QueryParams     string
+	UrlParamsValor  string
+	UrlParamsPatron string
+	Body string
+}
 
-	urlConQueryParams := url
-	if queryParams != "" {
-		urlConQueryParams = urlConQueryParams + "?" + queryParams
+func FactoryConfigTestBasic(dicHeader map[string]string) ConfigTestBasic {
+	return ConfigTestBasic{
+		CodeRespuesta: 200,
+		DicHeader:     dicHeader,
 	}
+}
+func TestBasicRequestGET(t2 *testing.T, a *assert.Assertions, fnHandler gin.HandlerFunc, configTest ConfigTestBasic) DicResp {
+	gin.SetMode(gin.TestMode)
 
+	route := gin.Default()
+
+	urlMap, urlConQueryParams := configRouteBasicTest(configTest)
+
+	route.GET(urlMap, fnHandler)
 	req, errReq := http.NewRequest(http.MethodGet, urlConQueryParams, nil)
 	if errReq != nil {
 		fmt.Println(errReq)
 		t2.Fatalf("Couldn't create request: %v\n", errReq)
 	}
 
-	for k := range dicHeader {
-		req.Header.Set(k, dicHeader[k])
+	for k := range configTest.DicHeader {
+		req.Header.Set(k, configTest.DicHeader[k])
 	}
 
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	route.ServeHTTP(w, req)
 
-	a.True(w.Code == codeRespuesta, "No es el codigo Esperado")
+	a.True(w.Code == configTest.CodeRespuesta, "No es el codigo Esperado")
 
 	respuesta, errorDecode := DecodeBodyResponse(w.Body)
 
@@ -258,31 +270,46 @@ func TestBasicRequestGET(t2 *testing.T, a *assert.Assertions, queryParams string
 
 }
 
-func TestBasicRequestPOST(t2 *testing.T, a *assert.Assertions, queryParams string, urlParams string, body string, handlerRequest gin.HandlerFunc, codeRespuesta int, dicHeader map[string]string) DicResp {
-	gin.SetMode(gin.TestMode)
-	ro := gin.Default()
-	url := "/test"+urlParams
-	ro.POST(url, handlerRequest)
-
-	urlConQueryParams := url
-	if queryParams != "" {
-		urlConQueryParams = urlConQueryParams + "?" + queryParams
+func configRouteBasicTest(configTest ConfigTestBasic) (string, string) {
+	urlMap := "/mock"
+	if configTest.UrlParamsPatron != "" {
+		urlMap = urlMap + configTest.UrlParamsPatron
 	}
 
-	req, errReq := http.NewRequest(http.MethodPost, urlConQueryParams, strings.NewReader(body))
+	urlTest := "/mock"
+	if configTest.UrlParamsValor != "" {
+		urlTest = urlTest + configTest.UrlParamsValor
+	}
+
+	urlConQueryParams := urlTest
+	if configTest.QueryParams != "" {
+		urlConQueryParams = urlConQueryParams + "?" + configTest.QueryParams
+	}
+	return urlMap, urlConQueryParams
+}
+
+func TestBasicRequestPOST(t2 *testing.T, a *assert.Assertions, fnHandler gin.HandlerFunc, configTest ConfigTestBasic) DicResp {
+	gin.SetMode(gin.TestMode)
+	route := gin.Default()
+
+	urlMap, urlConQueryParams := configRouteBasicTest(configTest)
+
+	route.POST(urlMap, fnHandler)
+	req, errReq := http.NewRequest(http.MethodPost, urlConQueryParams, strings.NewReader(configTest.Body))
+
 	if errReq != nil {
 		fmt.Println(errReq)
 		t2.Fatalf("Couldn't create request: %v\n", errReq)
 	}
 
-	for k := range dicHeader {
-		req.Header.Set(k, dicHeader[k])
+	for k := range configTest.DicHeader {
+		req.Header.Set(k, configTest.DicHeader[k])
 	}
 
 	w := httptest.NewRecorder()
-	ro.ServeHTTP(w, req)
+	route.ServeHTTP(w, req)
 
-	a.True(w.Code == codeRespuesta, "No es el codigo Esperado")
+	a.True(w.Code == configTest.CodeRespuesta, "No es el codigo Esperado")
 
 	respuesta, errorDecode := DecodeBodyResponse(w.Body)
 
