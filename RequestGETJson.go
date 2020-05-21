@@ -216,7 +216,6 @@ func RequestPOSTJson(url string, dicHeader map[string]string, bodyJson []byte) (
 	return getResponseForRequestJSON(req, dicHeader)
 }
 
-
 /* *********************************************************************************************** */
 /* *********************************************************************************************** */
 /*TEsting*/
@@ -227,7 +226,12 @@ func TestBasicRequestGET(t2 *testing.T, a *assert.Assertions, queryParams string
 	url := "/test"
 	r.GET(url, group)
 
-	req, errReq := http.NewRequest(http.MethodGet, url+queryParams, nil)
+	urlConQueryParams := url
+	if queryParams != "" {
+		urlConQueryParams = urlConQueryParams + "?"+queryParams
+	}
+
+	req, errReq := http.NewRequest(http.MethodGet, urlConQueryParams, nil)
 	if errReq != nil {
 		fmt.Println(errReq)
 		t2.Fatalf("Couldn't create request: %v\n", errReq)
@@ -260,7 +264,12 @@ func TestBasicRequestPOST(t2 *testing.T, a *assert.Assertions, queryParams strin
 	url := "/test"
 	ro.POST(url, handlerRequest)
 
-	req, errReq := http.NewRequest(http.MethodPost, url+queryParams, strings.NewReader(body))
+	urlConQueryParams := url
+	if queryParams != "" {
+		urlConQueryParams = urlConQueryParams + "?"+queryParams
+	}
+
+	req, errReq := http.NewRequest(http.MethodPost, urlConQueryParams, strings.NewReader(body))
 	if errReq != nil {
 		fmt.Println(errReq)
 		t2.Fatalf("Couldn't create request: %v\n", errReq)
