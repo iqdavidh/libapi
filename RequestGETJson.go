@@ -6,16 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
+	"strings"
+	"testing"
+	"time"
 )
 
 type DicJson map[string]interface{}
 
 type DicResp struct {
-	Success bool `json:"success"`
-	Msg     string `json:"msg"`
+	Success bool    `json:"success"`
+	Msg     string  `json:"msg"`
 	Data    DicJson `json:"data"`
 }
 
@@ -133,21 +138,49 @@ func GetIsAllCamposRequeridos(dicCampos DicJson, listaCamposReq []string) (bool,
 
 }
 
-/* *********************************************************************************************** */
-/* *********************************************************************************************** */
-/* *********************************************************************************************** */
+func DecodeBodyResponse(Body *bytes.Buffer) (DicResp, error) {
 
-func RequestGETJson(url string, headers map[string]string) (DicJson, error) {
+	body, _ := ioutil.ReadAll(Body)
 
-	res, err := http.Get(url)
-	if err != nil {
-		return DicJson{}, err
+	if !json.Valid(body) {
+		return DicResp{}, errors.New("json inválido \n" + fmt.Sprint(body))
 	}
+	var respuesta DicResp
+	erorrJson := json.Unmarshal(body, &respuesta)
+	if erorrJson != nil {
+		return DicResp{}, errors.New("json inválido \n" + fmt.Sprint(body))
+	}
+
+	return respuesta, nil
+}
+
+/* *********************************************************************************************** */
+/* *********************************************************************************************** */
+/* Request  */
+
+func getResponseForRequestJSON(req *http.Request, dicHeader map[string]string) (DicJson, error) {
+
+	req.Header.Set("Content-type", "application/json")
+
+	for k := range dicHeader {
+		req.Header.Set(k, dicHeader[k])
+	}
+
+	timeout := time.Duration(10 * time.Second)
+	client := http.Client{Timeout: timeout}
+
+	/* Hacer request********************* */
+	res, errRespo := client.Do(req)
+	if errRespo != nil {
+		return DicJson{}, errRespo
+	}
+	/* ************************************ */
+
 	defer res.Body.Close()
 
-	jsonBody, err2 := ioutil.ReadAll(res.Body)
-	if err2 != nil {
-		return DicJson{}, err2
+	jsonBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return DicJson{}, err
 	}
 
 	//convertir body en JSON
@@ -161,17 +194,95 @@ func RequestGETJson(url string, headers map[string]string) (DicJson, error) {
 	return dic, nil
 }
 
-func DecodeBodyResponse(Body *bytes.Buffer) (DicResp, error) {
-	body, _ := ioutil.ReadAll(Body)
+func RequestGETJson(url string, dicHeader map[string]string) (DicJson, error) {
 
-	if !json.Valid(body) {
-		return DicResp{}, errors.New("json inválido \n" + fmt.Sprint(body))
-	}
-	var respuesta DicResp
-	erorrJson := json.Unmarshal(body, &respuesta)
-	if erorrJson != nil {
-		return DicResp{}, errors.New("json inválido \n" + fmt.Sprint(body))
+	req, errFac := http.NewRequest("GET", url, nil)
+
+	if errFac != nil {
+		return DicJson{}, errFac
 	}
 
-	return respuesta, nil
+	return getResponseForRequestJSON(req, dicHeader)
+}
+
+func RequestPOSTJson(url string, dicHeader map[string]string, bodyJson []byte) (DicJson, error) {
+
+	req, errFac := http.NewRequest("POST", url, bytes.NewBuffer(bodyJson))
+
+	if errFac != nil {
+		return DicJson{}, errFac
+	}
+
+	return getResponseForRequestJSON(req, dicHeader)
+}
+
+
+/* *********************************************************************************************** */
+/* *********************************************************************************************** */
+/*TEsting*/
+
+func TestBasicRequestGET(t2 *testing.T, a *assert.Assertions, queryParams string, group gin.HandlerFunc, codeRespuesta int, dicHeader map[string]string) DicResp {
+	gin.SetMode(gin.TestMode)
+	r := gin.Default()
+	url := "/test"
+	r.GET(url, group)
+
+	req, errReq := http.NewRequest(http.MethodGet, url+queryParams, nil)
+	if errReq != nil {
+		fmt.Println(errReq)
+		t2.Fatalf("Couldn't create request: %v\n", errReq)
+	}
+
+	for k := range dicHeader {
+		req.Header.Set(k, dicHeader[k])
+	}
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	a.True(w.Code == codeRespuesta, "No es el codigo Esperado")
+
+	respuesta, errorDecode := DecodeBodyResponse(w.Body)
+
+	a.True(errorDecode == nil, "Esperamos error nil "+fmt.Sprint(errorDecode))
+
+	if errorDecode != nil {
+		t2.Fatalf(fmt.Sprint(errorDecode))
+	}
+
+	return respuesta
+
+}
+
+func TestBasicRequestPOST(t2 *testing.T, a *assert.Assertions, queryParams string, body string, handlerRequest gin.HandlerFunc, codeRespuesta int, dicHeader map[string]string) DicResp {
+	gin.SetMode(gin.TestMode)
+	ro := gin.Default()
+	url := "/test"
+	ro.POST(url, handlerRequest)
+
+	req, errReq := http.NewRequest(http.MethodPost, url+queryParams, strings.NewReader(body))
+	if errReq != nil {
+		fmt.Println(errReq)
+		t2.Fatalf("Couldn't create request: %v\n", errReq)
+	}
+
+	for k := range dicHeader {
+		req.Header.Set(k, dicHeader[k])
+	}
+
+	w := httptest.NewRecorder()
+	ro.ServeHTTP(w, req)
+
+	a.True(w.Code == codeRespuesta, "No es el codigo Esperado")
+
+	respuesta, errorDecode := DecodeBodyResponse(w.Body)
+
+	a.True(errorDecode == nil, "Esperamos error nil "+fmt.Sprint(errorDecode))
+
+	if errorDecode != nil {
+		t2.Fatalf(fmt.Sprint(errorDecode))
+	}
+
+	return respuesta
+
 }
