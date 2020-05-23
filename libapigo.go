@@ -239,8 +239,8 @@ func ApiClientReqGETJson(url string, dicHeader map[string]string) (DicJson, erro
 			return nil, errors.New("no mockup found for give request")
 		}
 
-		dic := DicJson{}
-		_ := json.Unmarshal(mock.StringResponse, &dic)
+		var dic DicJson
+		_ = json.Unmarshal(mock.StringResponse, &dic)
 		
 		return dic, mock.Err
 	}
@@ -262,8 +262,8 @@ func ApiClientReqPOSTJson(url string, dicHeader map[string]string, bodyJson []by
 			return nil, errors.New("no mockup found for give request")
 		}
 
-		dic := DicJson{}
-		_ := json.Unmarshal(mock.StringResponse, &dic)
+		var dic DicJson
+		_ = json.Unmarshal(mock.StringResponse, &dic)
 
 		return dic, mock.Err
 	}
