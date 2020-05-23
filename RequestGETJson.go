@@ -16,6 +16,21 @@ import (
 	"time"
 )
 
+/* Mocks ************************************************ */
+
+var (
+	enabledMocks = false
+	mocks        = make(map[string]*Mock)
+)
+
+type Mock struct {
+	Url        string
+	HttpMethod string
+	StringResponse   []byte
+	Err        error
+}
+
+/* ************************************************ */
 type DicJson map[string]interface{}
 
 type DicResp struct {
@@ -156,7 +171,29 @@ func DecodeBodyResponse(Body *bytes.Buffer) (DicResp, error) {
 
 /* *********************************************************************************************** */
 /* *********************************************************************************************** */
-/* Request  */
+/* API Clien  */
+
+
+func getMockId(httpMethod string, url string) string {
+	return fmt.Sprintf("%s_%s", httpMethod, url)
+}
+
+func APiClientStartMockups() {
+	enabledMocks = true
+}
+
+func ApiClientFlushMockups() {
+	mocks = make(map[string]*Mock)
+}
+
+func ApiClientStopMockups() {
+	enabledMocks = false
+}
+
+func ApiClientAddMockup(mock Mock) {
+	mocks[getMockId(mock.HttpMethod, mock.Url)] = &mock
+}
+
 
 func getResponseForRequestJSON(req *http.Request, dicHeader map[string]string) (DicJson, error) {
 
@@ -194,7 +231,19 @@ func getResponseForRequestJSON(req *http.Request, dicHeader map[string]string) (
 	return dic, nil
 }
 
-func RequestGETJson(url string, dicHeader map[string]string) (DicJson, error) {
+func ApiClientReqGETJson(url string, dicHeader map[string]string) (DicJson, error) {
+
+	if enabledMocks {
+		mock := mocks[getMockId(http.MethodGet, url)]
+		if mock == nil {
+			return nil, errors.New("no mockup found for give request")
+		}
+
+		dic := DicJson{}
+		_ := json.Unmarshal(mock.StringResponse, &dic)
+		
+		return dic, mock.Err
+	}
 
 	req, errFac := http.NewRequest("GET", url, nil)
 
@@ -205,8 +254,21 @@ func RequestGETJson(url string, dicHeader map[string]string) (DicJson, error) {
 	return getResponseForRequestJSON(req, dicHeader)
 }
 
-func RequestPOSTJson(url string, dicHeader map[string]string, bodyJson []byte) (DicJson, error) {
+func ApiClientReqPOSTJson(url string, dicHeader map[string]string, bodyJson []byte) (DicJson, error) {
 
+	if enabledMocks {
+		mock := mocks[getMockId(http.MethodPost, url)]
+		if mock == nil {
+			return nil, errors.New("no mockup found for give request")
+		}
+
+		dic := DicJson{}
+		_ := json.Unmarshal(mock.StringResponse, &dic)
+
+		return dic, mock.Err
+	}
+
+	
 	req, errFac := http.NewRequest("POST", url, bytes.NewBuffer(bodyJson))
 
 	if errFac != nil {
